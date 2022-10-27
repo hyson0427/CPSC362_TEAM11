@@ -120,3 +120,8 @@ def deleteRoom(request, pk):
         room.delete()
         return redirect('home')
     return render(request, 'delete.html', {'obj':room})
+
+def topic(request, pk):
+    topic = Topic.objects.get(name=pk)
+    context = {'topic': topic}
+    return render(request, "topic.html", context)
