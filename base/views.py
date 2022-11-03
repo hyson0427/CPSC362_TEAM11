@@ -122,6 +122,10 @@ def deleteRoom(request, pk):
     return render(request, 'delete.html', {'obj':room})
 
 def topic(request, pk):
+    rooms = Room.objects.filter(
+        Q(topic__name__icontains = pk)
+        )
+    room_count = rooms.count()
     topic = Topic.objects.get(name=pk)
-    context = {'topic': topic}
+    context = {'rooms': rooms, 'topic': topic, 'room_count': room_count}
     return render(request, "topic.html", context)
