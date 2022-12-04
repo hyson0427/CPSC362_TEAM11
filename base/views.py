@@ -3,11 +3,13 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Room, Topic
-from .forms import RoomForm
+from .models import Room, Topic, Comments
+from .forms import RoomForm , CommentForm 
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy 
 # Create your views here.
 
 # rooms = [
@@ -84,7 +86,7 @@ def room(request, pk):
 def createRoom(request):
     form = RoomForm()
     if request.method == 'POST':
-        form = RoomForm(request.POST)
+        form = RoomForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             return redirect('home')
@@ -120,3 +122,12 @@ def deleteRoom(request, pk):
         room.delete()
         return redirect('home')
     return render(request, 'delete.html', {'obj':room})
+
+class AddComment(CreateView):
+    model = Comments
+    form_class = CommentForm
+    template_name = 'add_comment.html'
+    success_url = reverse_lazy('home')
+    def form_valid(self, form):
+        form.instance.post_id = self.kwargs['pk']
+        return super().form_valid(form)

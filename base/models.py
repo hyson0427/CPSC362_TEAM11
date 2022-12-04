@@ -12,6 +12,8 @@ class Room(models.Model):
     host = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=200)
+    price = models.CharField(max_length=200)
+    image = models.ImageField(blank = True, null = True, upload_to = "images/" )
     description = models.TextField(null=True, blank=True) #null=True allows for the database to have a blank instance
     #participants = 
     updated = models.DateTimeField(auto_now=True) #Timestamps everytime
@@ -32,3 +34,13 @@ class Message(models.Model):
 
     def __str__(self):
         return self.body[0:50]
+
+class Comments(models.Model):
+    post = models.ForeignKey(Room, related_name="comments", on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    contact = models.CharField(max_length=255)
+    body = models.TextField()
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s  - %s' % (self.post.title, self.name)

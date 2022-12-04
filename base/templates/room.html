@@ -2,5 +2,29 @@
 
 {% block content %}
 <h1>{{room.name}}</h1>
+<h1>{{room.price}}</h1>
+<img src="{{room.image.url}}">
+<h2><p><Font size = "5">{{room.description}}</p></h2>
+<br/><br/>
+<hr>
 
+<h2>Offers...</h2>
+{% if not room.comments.all %}
+    No Offers Yet... <br/><br/>
+    <a>please include a form of contact information you dont mind sharing to the public! </a><br/><br/>
+        <a href="{% url 'add_comment' room.pk %}"> Add Offer</a>
+{%else%}
+<a>please include a form of contact information you dont mind sharing to the public! </a><br/><br/>
+<a href="{% url 'add_comment' room.pk%}"> Add Offer</a> <br/><br/>
+        {% for comment in room.comments.all %}
+            <Strong>
+                {{comment.name }},
+                {{comment.contact}},
+                {{comment.date_added}}
+            </Strong>
+            <br/>
+            {{comment.body}}
+            <br/><br/>
+        {%endfor%}
+{% endif%}
 {% endblock content %}
