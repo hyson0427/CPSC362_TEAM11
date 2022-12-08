@@ -3,11 +3,13 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Room, Topic
-from .forms import RoomForm
+from .models import Room, Topic, Message, Comments
+from .forms import RoomForm, CommentForm
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy 
 # Create your views here.
 
 # rooms = [
@@ -71,14 +73,33 @@ def home(request):
         )
     topics = Topic.objects.all()
     room_count = rooms.count()
+    room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
 
-    context = {'rooms': rooms, 'topics': topics, 'room_count': room_count}
+    context = {'rooms': rooms, 'topics': topics, 'room_count': room_count, 'room_messages': room_messages}
     return render(request, 'home.html', context)
 
 def room(request, pk):
     room = Room.objects.get(id=pk)
-    context = {'room': room}
+    room_messages = room.message_set.all().order_by('-created')
+    participants = room.participants.all()
+    if request.method == 'POST':
+        message = Message.objects.create(
+            user=request.user,
+            room=room,
+            body=request.POST.get('body')
+        )
+        room.participants.add(request.user)
+        return redirect('room', pk=room.id)
+    context = {'room': room,'room_messages':room_messages, 'participants':participants}
     return render(request, "room.html", context)
+
+def userProfile(request, pk):
+    user = User.objects.get(id=pk)
+    rooms = user.room_set.all()
+    room_message = user.message_set.all()
+    topics = Topic.objects.all()
+    context = {'user': user, 'rooms': rooms,'room_message': room_message, 'topics': topics}
+    return render(request,'profile.html', context)
 
 @login_required(login_url='login')
 def createRoom(request):
@@ -86,7 +107,9 @@ def createRoom(request):
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
-            form.save()
+            room = form.save(commit=False)
+            room.host = request.user
+            room.save()
             return redirect('home')
     
     context = {'form':form}
@@ -121,6 +144,18 @@ def deleteRoom(request, pk):
         return redirect('home')
     return render(request, 'delete.html', {'obj':room})
 
+@login_required(login_url='login')
+def deleteMessage(request, pk):
+    message = Message.objects.get(id=pk)
+
+    if request.user != message.user:
+        return HttpResponse("You don't have permission!")
+
+    if request.method == 'POST':
+        message.delete()
+        return redirect('home')
+    return render(request, 'delete.html', {'obj':message})
+
 def topic(request, pk):
     rooms = Room.objects.filter(
         Q(topic__name__icontains = pk)
@@ -129,3 +164,12 @@ def topic(request, pk):
     topic = Topic.objects.get(name=pk)
     context = {'rooms': rooms, 'topic': topic, 'room_count': room_count}
     return render(request, "topic.html", context)
+
+class AddComment(CreateView):
+    model = Comments
+    form_class = CommentForm
+    template_name = 'add_comment.html'
+    success_url = reverse_lazy('home')
+    def form_valid(self, form):
+        form.instance.post_id = self.kwargs['pk']
+        return super().form_valid(form)
