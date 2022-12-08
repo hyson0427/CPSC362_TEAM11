@@ -1,0 +1,16 @@
+<h3>Recent Activity</h3>
+<hr />
+{% for room in rooms %}
+<div>
+  <small>In "{{room.topic.name}}"</small>
+  <h5>
+    <a href="{% url 'user-profile' room.host.id %}">@{{room.host}}</a>
+  </h5>
+  <small>Created "{{room.name}}" {{room.created|timesince}} ago</small>
+  <p>{{room.description}}</p>
+  {% if request.user == room.host %}
+  <a href="{% url 'delete-room' room.id %}">Delete</a>
+  {% endif %}
+  <hr />
+</div>
+{% endfor %}
